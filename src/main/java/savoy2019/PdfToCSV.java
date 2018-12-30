@@ -1,4 +1,5 @@
 package savoy2019;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,36 +24,64 @@ public class PdfToCSV {
         //System.out.println(documentText);
 
         String[] tablica = documentText.split("\n");
+        String header = "Referencia,colección,Catalogo,Distributor Price EXW-Valencia,Distributor Price EXW-Valencia," +
+                "uds por caja,Peso bruto,imap price\n" +
+                "sku #,Family,Catalogue,CE 2019 [€] (Ready pickup 50~65 days),CE 2019 [€] (Ready pickup 20~30 days)," +
+                "Pkg size,Packed weight [kg],online (Valid until June 30th 2019)\n";
 
-        try {
-            FileWriter writer = new FileWriter("savoy2019.txt", true);
-            writer.write("Referencia,colección,Catalogo,Distributor Price EXW-Valencia (Listo/Ready pickup 50~65" +
-                    " días/days),Distributor Price EXW-Valencia (Listo/Ready pickup 20~30 días/days),uds por caja,Peso " +
-                    "bruto,imap price\n" +
-                    "sku #,Family,Catalogue,CE 2019 [€],CE 2019 [€],Pkg size,Packed weight [kg],online " +
-                    "(Valid until June, 30th 2019)\n");
-            for (int i = 0; i < tablica.length; i++) {
-                if (tablica[i].trim().endsWith("€")) {
-                    writer.write(tablica[i].trim().replaceAll("\\s€|\\skg", "").replaceAll(" ", ",") + "\n");
+        StringBuilder sb = new StringBuilder(header);
+
+        for (int i = 0; i < tablica.length; i++) {
+            if (tablica[i].trim().endsWith("€")) {
+                int lineLength = tablica[i].trim().replaceAll("\\s€|\\skg|,", "").split(" ").length;
+
+                // check if 'Pkg size' is 1 (is not empty)
+                if (tablica[i].trim().replaceAll("\\s€|\\skg|,", "").split(" ")[lineLength - 3].equals("1")) {
+
+                    // join collection name into one record in the row
+                    if (lineLength == 8) {
+                        sb.append(tablica[i].trim().replaceAll("\\s€|\\skg|,", "").replaceAll(" ", ",") + "\n");
+                    } else if (lineLength > 8) {
+                        sb.append(tablica[i].trim().replaceAll("\\s€|\\skg|,", "").split(" ")[0] + ",");
+                        for (int j = 1; j < lineLength - 6; j++) {
+                            if (j < lineLength - 7) {
+                                sb.append(tablica[i].trim().replaceAll("\\s€|\\skg|,", "").split(" ")[j] + " ");
+                            } else {
+                                sb.append(tablica[i].trim().replaceAll("\\s€|\\skg|,", "").split(" ")[j]);
+                            }
+                        }
+                        sb.append(",");
+
+                        // append other records into the row
+                        for (int j = lineLength - 6; j < lineLength; j++) {
+                            if (j < lineLength - 1) {
+                                sb.append(tablica[i].trim().replaceAll("\\s€|\\skg|,", "").split(" ")[j] + ",");
+                            } else {
+                                sb.append(tablica[i].trim().replaceAll("\\s€|\\skg|,", "").split(" ")[j]);
+                            }
+                        }
+                        sb.append("\n");
+                    }
+                } else {
+                    sb.append("Data missing\n");
                 }
             }
+        }
+        System.out.println(sb);
+
+        // write sb string as csv file
+        try {
+            FileWriter writer = new FileWriter("savoy2019.csv", true);
+            writer.write(sb.toString());
             writer.close();
+            System.out.println("'savoy2019.csv' file created successfully");
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-
-        for (int i=0; i<tablica.length; i++){
-            if (tablica[i].trim().endsWith("€") ){
-                System.out.println(tablica[i].trim().replaceAll("\\s€|\\skg", "").replaceAll(" ", ","));
-                System.out.println(tablica[i].split(" ").length);
-                System.out.println(tablica[i].substring(9,25));
-            }
-        }
-
         //Closing the document
         document.close();
-
     }
 }
+
